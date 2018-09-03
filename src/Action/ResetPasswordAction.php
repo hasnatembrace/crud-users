@@ -121,6 +121,7 @@ class ResetPasswordAction extends BaseAction
      */
     protected function _save(Subject $subject)
     {
+    	//Changes by Hasnat
         $entity = $this->_table()->patchEntity(
             $subject->entity,
             $this->_request()->data,
