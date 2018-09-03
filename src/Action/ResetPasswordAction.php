@@ -26,6 +26,7 @@ class ResetPasswordAction extends BaseAction
         'scope' => 'entity',
         'findMethod' => 'all',
         'saveMethod' => 'save',
+        'tokenField' => 'token',
         'relatedModels' => true,
         'saveOptions' => [],
         'view' => null,

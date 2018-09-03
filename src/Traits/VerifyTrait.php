@@ -68,7 +68,7 @@ trait VerifyTrait
         }
         $this->_trigger('verifyToken', $subject);
 
-        if ($subject->verified) {
+        if ($subject->entity && $subject->entity->verified) {
             return $subject->entity;
         }
 

@@ -1,28 +1,29 @@
 <?php
-
 namespace CrudUsers\Action;
-
 use Crud\Action\BaseAction;
 use Crud\Event\Subject;
 use Crud\Traits\FindMethodTrait;
 use Crud\Traits\RedirectTrait;
 use Crud\Traits\ViewTrait;
 use Crud\Traits\ViewVarTrait;
+use Crud\Traits\SaveMethodTrait;
+use Cake\Utility\Text;
 
 class ForgotPasswordAction extends BaseAction
 {
-
     use FindMethodTrait;
     use RedirectTrait;
     use ViewTrait;
     use ViewVarTrait;
-
+    use SaveMethodTrait;
     protected $_defaultConfig = [
         'enabled' => true,
         'scope' => 'entity',
         'findConfig' => [],
+        'saveMethod' => 'save',
         'findMethod' => 'all',
         'tokenField' => 'token',
+        'saveOptions' => [],
         'messages' => [
             'success' => [
                 'text' => 'A recovery email has been sent successfully'
@@ -36,7 +37,6 @@ class ForgotPasswordAction extends BaseAction
         'view' => null,
         'viewVar' => null
     ];
-
     /**
      * HTTP GET handler
      *
@@ -48,10 +48,8 @@ class ForgotPasswordAction extends BaseAction
             'success' => true,
             'entity' => $this->_entity($this->_request()->query ?: null)
         ]);
-
         $this->_trigger('beforeRender', $subject);
     }
-
     /**
      * HTTP POST handler
      *
@@ -63,22 +61,16 @@ class ForgotPasswordAction extends BaseAction
             'findConfig' => $this->_getFindConfig(),
             'findMethod' => $this->config('findMethod')
         ]);
-
         $this->_trigger('beforeForgotPassword', $subject);
-
         $entity = $this->_table()
             ->find($subject->findMethod, $subject->findConfig)
             ->first();
-
         if (empty($entity)) {
             return $this->_error($subject);
         }
-
         $subject->set(['entity' => $entity]);
-
         return $this->_success($subject);
     }
-
     /**
      * Get the query configuration
      *
@@ -88,10 +80,8 @@ class ForgotPasswordAction extends BaseAction
     {
         $config = (array)$this->config('findConfig') + ['conditions' => []];
         $config['conditions'] = array_merge($config['conditions'], $this->_request()->data);
-
         return $config;
     }
-
     /**
      * Post success callback
      *
@@ -101,19 +91,35 @@ class ForgotPasswordAction extends BaseAction
     protected function _success(Subject $subject)
     {
         $subject->set(['success' => true]);
-
         $this->_trigger('afterForgotPassword', $subject);
         $this->setFlash('success', $subject);
-
         if ($this->config('redirectUrl') === null) {
             $redirectUrl = $this->_controller()->Auth->config('loginAction');
         } else {
             $redirectUrl = $this->config('redirectUrl');
         }
 
+        //save token to database
+        $data = ['token' => Text::uuid()];
+        $entity = $this->_table()->patchEntity(
+          $subject->entity,
+          $data,
+          []
+        );        
+        $subject->set(['entity' => $entity]);
+
+        $this->_trigger('beforeSave', $subject);
+
+        $success = call_user_func(
+            [$this->_table(), $this->saveMethod()],
+            $entity,
+            []
+        );
+
+        $this->_trigger('afterSave', $subject);        
+
         return $this->_redirect($subject, $redirectUrl);
     }
-
     /**
      * Post error callback
      *
@@ -123,7 +129,6 @@ class ForgotPasswordAction extends BaseAction
     protected function _error(Subject $subject)
     {
         $subject->set(['success' => false, 'entity' => null]);
-
         $this->_trigger('afterForgotPassword', $subject);
         $this->setFlash('error', $subject);
         $this->_trigger('beforeRender', $subject);

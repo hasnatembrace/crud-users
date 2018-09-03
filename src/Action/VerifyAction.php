@@ -32,7 +32,7 @@ class VerifyAction extends BaseAction
         'saveOptions' => [],
         'view' => null,
         'api' => [
-            'methods' => ['put', 'post'],
+            'methods' => ['put', 'get'],
             'success' => [
                 'code' => 200
             ],
@@ -79,7 +79,7 @@ class VerifyAction extends BaseAction
             return $this->_success();
         }
 
-        $this->_error();
+        return $this->_error();
     }
 
     /**
@@ -134,7 +134,7 @@ class VerifyAction extends BaseAction
     /**
      * Post error callback
      *
-     * @return void
+     * @return void|\Cake\Network\Response
      */
     protected function _error()
     {
